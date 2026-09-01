@@ -1,12 +1,10 @@
-# AgentTube - ECGHuNZSECqTXabaLjkVrTEnguiNZLkKF1qi8oBGpump
+# Lumen
 
 **The open-source AI agent that runs a YouTube channel end to end.**
 
-Join our telegram community: https://t.co/L4SzbqosOM
-
 Research topics → write scripts → generate narration and visuals → assemble videos → optimize metadata → review → schedule → publish → learn from analytics and from what your audience says.
 
-[![CI](https://github.com/darkzOGx/youtube-automation-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/darkzOGx/youtube-automation-agent/actions/workflows/ci.yml)
+[![CI](https://github.com/douglasabentoadv/youtube-automation-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/douglasabentoadv/youtube-automation-agent/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js 18+](https://img.shields.io/badge/node-18%2B-43853d.svg)](package.json)
 
@@ -40,7 +38,7 @@ See the complete release history in [CHANGELOG.md](CHANGELOG.md).
 ## Quick start
 
 ```bash
-git clone https://github.com/darkzOGx/youtube-automation-agent.git
+git clone https://github.com/douglasabentoadv/youtube-automation-agent.git
 cd youtube-automation-agent
 npm install
 npm run walkthrough
