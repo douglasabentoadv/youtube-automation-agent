@@ -235,8 +235,8 @@ class AIVideoGenerator {
       model: "gpt-image-2",
       prompt: prompt,
       n: 1,
-      size: "1536x1024",
-      quality: "high",
+      size: process.env.OPENAI_IMAGE_SIZE || "1024x1024",
+      quality: process.env.OPENAI_IMAGE_QUALITY || "medium",
     });
 
     if (response.data[0].b64_json) {
@@ -776,19 +776,32 @@ class AIVideoGenerator {
   }
 
   calculateScriptDuration(script) {
+    // AI-generated sections already carry an authoritative per-section
+    // duration (summed into mainContent.totalDuration at script-generation
+    // time) — prefer that over re-deriving it from a word count, since the
+    // word-count path below only recognizes `section.content` as a string
+    // and silently ignores it when it's the array-of-bullets shape the AI
+    // schema actually returns.
+    if (script.mainContent && Number.isFinite(script.mainContent.totalDuration) && script.mainContent.totalDuration > 0) {
+      const introOutroSeconds = 20 + 30 + 15; // hook + introduction + conclusion + cta, matching their fixed on-screen windows
+      return Math.max(30, Math.ceil(script.mainContent.totalDuration + introOutroSeconds));
+    }
+
     // Estimate duration based on word count (average 150 words per minute)
     let totalWords = 0;
-    
+
     if (script.hook) totalWords += script.hook.text.split(' ').length;
     if (script.introduction) {
       totalWords += (script.introduction.greeting || '').split(' ').length;
       totalWords += (script.introduction.topicIntro || '').split(' ').length;
     }
-    
+
     if (script.mainContent && script.mainContent.sections) {
       script.mainContent.sections.forEach(section => {
         if (typeof section.content === 'string') {
           totalWords += section.content.split(' ').length;
+        } else if (Array.isArray(section.content)) {
+          totalWords += section.content.join(' ').split(' ').length;
         }
         if (section.items) {
           section.items.forEach(item => {

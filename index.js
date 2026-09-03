@@ -1408,7 +1408,10 @@ class YouTubeAutomationAgent {
 
   async generateContent(topic = null, style = null, length = 'medium', options = {}) {
     this.logger.info('Starting content generation pipeline...');
-    const { jobId = null, strategyContext = {} } = options;
+    const { jobId = null, strategyContext: rawStrategyContext = {} } = options;
+    // `options.strategyContext` can be explicitly `null` (default JS params
+    // only apply to `undefined`), so normalize it here before use.
+    const strategyContext = rawStrategyContext || {};
     const profile = await this.db.getChannelProfile() || {};
     const lengthLabels = { short: '2-4 minutes', medium: '8-12 minutes', long: '15-20 minutes' };
 
@@ -1427,6 +1430,7 @@ class YouTubeAutomationAgent {
       generated.planRationale = strategyContext.rationale || null;
       generated.targetAudience = strategyContext.audience || profile.target_audience || generated.targetAudience;
       generated.brandVoice = profile.brand_voice || null;
+      generated.channelName = profile.channel_name || null;
       generated.channelGoal = strategyContext.objective || profile.goal || null;
       generated.channelValueProposition = strategyContext.valueProposition || null;
       generated.channelConstraints = strategyContext.constraints || null;

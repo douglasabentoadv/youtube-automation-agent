@@ -72,7 +72,7 @@ class SEOOptimizerAgent {
           primaryKeyword: strategy.keywords[0],
           secondaryKeywords: strategy.keywords.slice(1, 5),
           targetLength: this.calculateOptimalLength(strategy.contentType),
-          language: 'en',
+          language: process.env.CONTENT_LANGUAGE_CODE || 'en',
           category: this.selectCategory(strategy)
         },
         createdAt: new Date().toISOString()
@@ -103,6 +103,7 @@ Return only valid JSON with this exact shape:
   "tags": ["tag"]
 }
 
+Language: Write the title, description, and tags in ${process.env.CONTENT_LANGUAGE || 'English'} — natural, native-sounding phrasing, not a literal translation.
 Video title: ${script.title}
 Topic: ${strategy.topic}
 Angle: ${strategy.angle}

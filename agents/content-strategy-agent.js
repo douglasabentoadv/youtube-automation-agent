@@ -440,6 +440,7 @@ Return only valid JSON with this exact shape:
   "keywords": ["keyword"]
 }
 
+Language: Write the topic, angle, targetAudience, and keywords in ${process.env.CONTENT_LANGUAGE || 'English'} — natural, native-sounding phrasing, not a literal translation.
 Requested topic: ${requestedTopic || 'none'}
 Trending topics available: ${trendingTopics || 'Technology Trends'}
 Channel target audience: ${process.env.TARGET_AUDIENCE || 'General audience interested in educational content'}

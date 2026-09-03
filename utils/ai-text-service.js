@@ -154,6 +154,22 @@ class AITextService {
         });
         return this._extractContent(response);
       }
+
+      // Reasoning-tier models (e.g. gpt-5.6-luna) reject any non-default
+      // temperature; retry once with the parameter omitted entirely.
+      if (
+        error &&
+        error.status === 400 &&
+        /temperature/i.test(error.message || '')
+      ) {
+        const { temperature: _omit, ...paramsWithoutTemperature } = params;
+        const response = await this.client.chat.completions.create({
+          ...paramsWithoutTemperature,
+          max_completion_tokens: maxTokens,
+        });
+        return this._extractContent(response);
+      }
+
       throw error;
     }
   }

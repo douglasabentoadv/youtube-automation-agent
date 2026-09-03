@@ -111,15 +111,33 @@ Return only valid JSON with this exact shape:
 {
   "title": "compelling title under 100 characters",
   "hook": "opening hook in one sentence",
+  "introduction": {
+    "greeting": "short channel-voice greeting, no generic filler",
+    "topicIntro": "one sentence introducing this specific topic",
+    "valueProposition": "one sentence on what the viewer will get from this specific video",
+    "credibility": "one short sentence establishing why this video is trustworthy, specific to the topic — not a generic claim"
+  },
   "sections": [
     { "title": "section title", "content": ["spoken script bullet"], "duration": 60 }
   ],
-  "cta": "clear call to action",
+  "conclusion": {
+    "title": "short closing section label",
+    "recap": ["specific recap bullet grounded in this video's actual content", "..."],
+    "finalThought": "one closing sentence specific to this topic"
+  },
+  "cta": {
+    "subscribe": "subscribe line specific to this channel/topic",
+    "like": "short like-prompt line",
+    "comment": "comment-prompt line specific to this topic",
+    "nextVideo": "short line teasing more related content"
+  },
   "claims": [
     { "text": "specific factual claim a reviewer must verify", "riskLevel": "standard|high", "sourceUrls": ["exact supplied source URL"] }
   ]
 }
 
+Every recap bullet and the finalThought must be grounded in what this specific script actually covers — never generic placeholders like "tips for success" or "practical steps".
+Language: Write the entire response — every field above — in ${process.env.CONTENT_LANGUAGE || 'English'}. Use natural, native-sounding phrasing, not a literal translation.
 Topic: ${strategy.topic}
 Style/content type: ${strategy.contentType}
 Angle: ${strategy.angle}
@@ -127,6 +145,7 @@ Target audience: ${strategy.targetAudience}
 Desired length: ${strategy.requestedLength || process.env.DEFAULT_VIDEO_LENGTH || '8-12 minutes'}
 Tone: ${template.tone}
 Pacing: ${template.pacing}
+Channel name: ${strategy.channelName || 'this channel'} — the introduction greeting must reference this exact channel name (or a natural short form of it), never invent a different channel name.
 Brand voice: ${strategy.brandVoice || 'clear, credible, and engaging'}
 Channel goal: ${strategy.channelGoal || 'help the viewer understand and act'}
 Channel value proposition: ${strategy.channelValueProposition || 'give the viewer practical value'}
@@ -139,7 +158,10 @@ Avoid fabricated statistics, unsupported claims, and fake urgency. List every ex
 
     try {
       const response = await this.aiTextService.generateText(prompt, {
-        maxTokens: 1800,
+        // Reasoning-tier models (e.g. gpt-5.6-luna) spend part of this budget
+        // on hidden reasoning tokens before any visible output; 1800 was too
+        // tight and produced an empty response. Give it real headroom.
+        maxTokens: 6000,
         temperature: 0.7
       });
       const parsed = this.parseAIJsonResponse(response);
@@ -153,12 +175,12 @@ Avoid fabricated statistics, unsupported claims, and fake urgency. List every ex
       return {
         title: String(parsed.title).slice(0, 100),
         hook: this.normalizeAIHook(parsed.hook),
-        introduction: await this.generateIntroduction(strategy),
+        introduction: this.normalizeAIIntroduction(parsed.introduction, strategy),
         mainContent: {
           sections,
           totalDuration: this.calculateSectionsDuration(sections)
         },
-        conclusion: await this.generateConclusion(strategy),
+        conclusion: this.normalizeAIConclusion(parsed.conclusion, strategy),
         callToAction: this.normalizeAICTA(parsed.cta, strategy),
         duration: this.estimateDuration({ sections }),
         tone: template.tone,
@@ -202,6 +224,31 @@ Avoid fabricated statistics, unsupported claims, and fake urgency. List every ex
       type: 'ai',
       text: String(text).trim(),
       duration: '0:00-0:05'
+    };
+  }
+
+  normalizeAIIntroduction(introduction, strategy) {
+    const source = introduction && typeof introduction === 'object' ? introduction : {};
+    return {
+      greeting: String(source.greeting || `Welcome back — let's get into ${strategy.topic}.`).trim(),
+      topicIntro: String(source.topicIntro || `Today we're covering ${strategy.topic}.`).trim(),
+      valueProposition: String(source.valueProposition || this.getValueProposition(strategy)).trim(),
+      credibility: String(source.credibility || this.getCredibilityStatement(strategy)).trim(),
+      duration: '0:05-0:20'
+    };
+  }
+
+  normalizeAIConclusion(conclusion, strategy) {
+    const source = conclusion && typeof conclusion === 'object' ? conclusion : {};
+    const recap = Array.isArray(source.recap)
+      ? source.recap.map(item => String(item).trim()).filter(Boolean).slice(0, 6)
+      : [`What we covered about ${strategy.topic}.`];
+    return {
+      type: 'conclusion',
+      title: String(source.title || 'Wrapping up').trim(),
+      recap: recap.length > 0 ? recap : [`What we covered about ${strategy.topic}.`],
+      finalThought: String(source.finalThought || `That's the full picture on ${strategy.topic}.`).trim(),
+      duration: '30 seconds'
     };
   }
 

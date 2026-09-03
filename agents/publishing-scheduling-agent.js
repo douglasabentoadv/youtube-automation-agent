@@ -203,7 +203,16 @@ class PublishingSchedulingAgent {
       this.logger.warn(`YouTube metadata warnings: ${validation.warnings.join(' ')}`);
     }
     const safeMetadata = validation.value;
-    
+
+    // The queue only processes entries once their publishTime has already
+    // elapsed (processPublishQueue filters on `publishTime <= now`), so
+    // publishAt is guaranteed to be in the past by the time we get here.
+    // YouTube rejects a non-future publishAt ("invalid scheduled publishing
+    // time"), so only send it when it's still meaningfully ahead of now —
+    // otherwise the intent is simply "publish now" at the target privacy.
+    const publishAtDate = new Date(scheduleEntry.publishTime);
+    const isFuturePublishAt = Number.isFinite(publishAtDate.getTime()) && publishAtDate.getTime() > Date.now() + 60000;
+
     // Prepare video metadata
     const videoMetadata = {
       snippet: {
@@ -215,8 +224,8 @@ class PublishingSchedulingAgent {
         defaultAudioLanguage: safeMetadata.defaultAudioLanguage
       },
       status: {
-        privacyStatus: metadata.privacyStatus || process.env.DEFAULT_PRIVACY_STATUS || 'private',
-        publishAt: scheduleEntry.publishTime,
+        privacyStatus: isFuturePublishAt ? 'private' : (metadata.privacyStatus || process.env.DEFAULT_PRIVACY_STATUS || 'private'),
+        ...(isFuturePublishAt ? { publishAt: scheduleEntry.publishTime } : {}),
         selfDeclaredMadeForKids: false,
         containsSyntheticMedia: metadata.containsSyntheticMedia === true
       }
@@ -396,8 +405,8 @@ class PublishingSchedulingAgent {
         requestBody: {
           snippet: {
             videoId: videoId,
-            language: 'en',
-            name: 'English Captions',
+            language: process.env.CONTENT_LANGUAGE_CODE || 'en',
+            name: process.env.CONTENT_LANGUAGE_CODE === 'pt-BR' ? 'Legendas em Português' : 'English Captions',
             isDraft: false
           }
         },
